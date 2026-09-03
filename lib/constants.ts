@@ -35,3 +35,6 @@ export const LEGAL_DISCLAIMER =
 
 export const SITE_NAME = "إنابة";
 export const SITE_TAGLINE = "دليل الإنابات القضائية للمحامين بمصر";
+
+/** رقم واتساب المنصة لاستقبال طلبات مكتبة النماذج (F7) — SPEC.md §8/F7. */
+export const FORMS_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_FORMS_WHATSAPP_NUMBER || null;

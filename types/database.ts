@@ -416,6 +416,54 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["rate_limit_events"]["Insert"]>;
         Relationships: [];
       };
+      legal_forms: {
+        Row: {
+          id: string;
+          category: string;
+          title: string;
+          description: string | null;
+          price_egp: number;
+          file_path: string;
+          file_type: "docx" | "pdf";
+          is_published: boolean;
+          download_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: string;
+          title: string;
+          description?: string | null;
+          price_egp: number;
+          file_path: string;
+          file_type?: "docx" | "pdf";
+          is_published?: boolean;
+          download_count?: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["legal_forms"]["Insert"]>;
+        Relationships: [];
+      };
+      legal_form_orders: {
+        Row: {
+          id: number;
+          form_id: string;
+          buyer_name: string | null;
+          buyer_whatsapp: string;
+          status: "pending" | "paid" | "delivered" | "cancelled";
+          admin_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          form_id: string;
+          buyer_name?: string | null;
+          buyer_whatsapp: string;
+          status?: "pending" | "paid" | "delivered" | "cancelled";
+          admin_note?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["legal_form_orders"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       public_lawyers: {

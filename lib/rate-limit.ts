@@ -25,4 +25,5 @@ export const RATE_LIMITS = {
   postDelegationRequest: { max: 5, windowHours: 24 },
   respondToRequest: { max: 30, windowHours: 24 },
   registerFromSameFingerprint: { max: 3, windowHours: 24 },
+  orderLegalForm: { max: 5, windowHours: 24 },
 } as const;
