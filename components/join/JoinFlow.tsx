@@ -38,6 +38,7 @@ export function JoinFlow({ governorates, courts }: JoinFlowProps) {
   const [barNumber, setBarNumber] = useState("");
   const [bio, setBio] = useState("");
   const [selectedCourtIds, setSelectedCourtIds] = useState<number[]>([]);
+  const [carnetFile, setCarnetFile] = useState<File | null>(null);
 
   const availableCourts = useMemo(
     () => courts.filter((c) => c.governorate_id === governorateId),
@@ -103,6 +104,10 @@ export function JoinFlow({ governorates, courts }: JoinFlowProps) {
       setError("من فضلك أكمل كل الحقول المطلوبة (الاسم 5 أحرف على الأقل)");
       return;
     }
+    if (!carnetFile) {
+      setError("لازم ترفع صورة كارنيه النقابة — التوثيق إجباري قبل الظهور في الدليل");
+      return;
+    }
 
     setLoading(true);
     const supabase = createClient();
@@ -138,6 +143,20 @@ export function JoinFlow({ governorates, courts }: JoinFlowProps) {
         .from("lawyer_courts")
         .insert(selectedCourtIds.map((court_id) => ({ lawyer_id: user.id, court_id })));
     }
+
+    const ext = carnetFile.name.split(".").pop() ?? "jpg";
+    const carnetPath = `${user.id}/carnet.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("carnets")
+      .upload(carnetPath, carnetFile, { upsert: true });
+
+    if (uploadError) {
+      setLoading(false);
+      setError("تم إنشاء الحساب لكن تعذّر رفع الكارنيه: " + uploadError.message);
+      return;
+    }
+
+    await supabase.from("lawyer_profiles").update({ carnet_path: carnetPath }).eq("id", user.id);
 
     setLoading(false);
     setStep("done");
@@ -299,6 +318,23 @@ export function JoinFlow({ governorates, courts }: JoinFlowProps) {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
+
+          <div>
+            <label htmlFor="carnet" className="mb-2 block text-sm font-medium text-navy-900">
+              صورة كارنيه النقابة <span className="text-urgent">*</span>
+            </label>
+            <input
+              id="carnet"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className={inputClass}
+              onChange={(e) => setCarnetFile(e.target.files?.[0] ?? null)}
+              required
+            />
+            <p className="mt-1 text-xs text-navy-700">
+              إجباري قبل الظهور في الدليل — يراجعه فريقنا يدويًا (JPG/PNG/WebP، حتى 5MB).
+            </p>
+          </div>
 
           {error && <p className="text-sm text-urgent">{error}</p>}
           <button

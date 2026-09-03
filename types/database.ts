@@ -94,7 +94,12 @@ export interface Database {
           role?: UserRole;
           accepts_notifications?: boolean;
         };
-        Update: Partial<Database["public"]["Tables"]["lawyer_profiles"]["Insert"]>;
+        Update: Partial<Database["public"]["Tables"]["lawyer_profiles"]["Insert"]> & {
+          verification_status?: VerificationStatus;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          rejection_reason?: string | null;
+        };
         Relationships: [];
       };
       lawyer_courts: {
