@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { DELEGATION_TYPE_OPTIONS } from "@/lib/constants";
 import type { Court, Governorate } from "@/lib/data/reference";
 import type { DelegationType } from "@/types/database";
@@ -42,29 +41,28 @@ export function NewRequestForm({ governorates, courts }: NewRequestFormProps) {
     }
 
     setLoading(true);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.replace("/join?redirectedFrom=/board/new");
-      return;
-    }
-
-    const { error: insertError } = await supabase.from("delegation_requests").insert({
-      requester_id: user.id,
-      court_id: courtId,
-      governorate_id: governorateId,
-      delegation_type: delegationType,
-      session_date: sessionDate,
-      details: details.trim(),
-      fee_note: feeNote.trim() || null,
+    const res = await fetch("/api/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        courtId,
+        governorateId,
+        delegationType,
+        sessionDate,
+        details: details.trim(),
+        feeNote: feeNote.trim() || null,
+      }),
     });
+    const data = await res.json();
 
     setLoading(false);
-    if (insertError) {
-      setError("تعذّر نشر الطلب: " + insertError.message);
+    if (!res.ok) {
+      if (res.status === 401) {
+        router.replace("/join?redirectedFrom=/board/new");
+        return;
+      }
+      setError(data.error ?? "تعذّر نشر الطلب");
       return;
     }
 

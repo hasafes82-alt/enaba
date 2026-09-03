@@ -1044,9 +1044,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=        # الخادم فقط — لا يُستخدم في أي مكوّن عميل إطلاقًا
 NEXT_PUBLIC_SITE_URL=
-VAPID_PUBLIC_KEY=                 # Web Push
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=     # Web Push — يحتاجه المتصفح عند الاشتراك، لذا NEXT_PUBLIC_ إلزامي هنا
 VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=                    # mailto: للتواصل حسب معيار Web Push
 DAILY_HASH_SALT=                  # لتجزئة بصمة الزائر
+INTERNAL_CRON_SECRET=             # يحمي /api/internal/dispatch-notifications من الاستدعاء العام
 ```
 
 > **قاعدة أمنية:** أي متغير بلا بادئة `NEXT_PUBLIC_` **ممنوع** استيراده داخل ملف يحتوي

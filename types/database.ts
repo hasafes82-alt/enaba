@@ -289,6 +289,19 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["perk_redemptions"]["Insert"]>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: number;
+          lawyer_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          created_at: string;
+        };
+        Insert: { id?: number; lawyer_id: string; endpoint: string; p256dh: string; auth: string };
+        Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
       notification_subscriptions: {
         Row: {
           id: number;
@@ -331,6 +344,9 @@ export interface Database {
           channel: string;
           payload: Record<string, unknown>;
           status?: string;
+          attempts?: number;
+          sent_at?: string | null;
+          error?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["notifications_outbox"]["Insert"]>;
         Relationships: [];

@@ -4,6 +4,7 @@ import { getOpenBoardRequests } from "@/lib/data/requests";
 import { getCourts, getGovernorates } from "@/lib/data/reference";
 import { createClient } from "@/lib/supabase/server";
 import { RequestBoard } from "@/components/board/RequestBoard";
+import { NotificationOptIn } from "@/components/board/NotificationOptIn";
 
 export const metadata = {
   title: "لوحة طلبات الإنابة المستعجلة",
@@ -40,6 +41,8 @@ export default async function BoardPage() {
           طرح طلب إنابة جديد
         </Link>
       </div>
+
+      <NotificationOptIn isAuthenticated={Boolean(user)} />
 
       <RequestBoard
         initialRequests={requests}

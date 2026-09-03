@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
   const { data: target } = await admin
     .from("lawyer_profiles")
-    .select("id, carnet_path, verification_status")
+    .select("id, carnet_path, verification_status, governorate_id")
     .eq("id", targetId)
     .single();
 
@@ -78,6 +78,24 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     entity_id: targetId,
     meta: reason ? { reason } : null,
   });
+
+  // اشتراك تلقائي في إشعارات محافظته عند التوثيق — SPEC.md §9
+  if (action === "approve") {
+    const { data: existingSub } = await admin
+      .from("notification_subscriptions")
+      .select("id")
+      .eq("lawyer_id", targetId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!existingSub) {
+      await admin.from("notification_subscriptions").insert({
+        lawyer_id: targetId,
+        governorate_id: target.governorate_id,
+        channel: "push",
+      });
+    }
+  }
 
   return NextResponse.json({ success: true });
 }
