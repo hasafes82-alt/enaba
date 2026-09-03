@@ -91,7 +91,7 @@
 
 > هذه القرارات **نهائية وغير قابلة للتفاوض** أثناء التنفيذ. لا يوجد "أو".
 
-### ADR-01 — الإطار: Next.js 15 (App Router)
+### ADR-01 — الإطار: Next.js (أحدث إصدار مستقر، App Router)
 **القرار:** Next.js حصريًا. **Vite ممنوع.**
 **السبب:** المنتج دليل (Directory)، ومصدر النمو المجاني الأساسي هو البحث العضوي على جوجل
 («إنابة محامي المنيا»، «محامي حضور جلسة طنطا»). هذا يستلزم توليد صفحات ثابتة/خادمية لكل
@@ -106,7 +106,7 @@ LocalStorage يُستخدم **فقط** لتفضيلات الواجهة (المح
 ### ADR-03 — الحزمة التقنية
 | الطبقة | الاختيار |
 |---|---|
-| الإطار | Next.js 15 · App Router · TypeScript (strict) |
+| الإطار | Next.js (أحدث إصدار مستقر عند بدء التنفيذ — الحالي 16) · App Router · TypeScript (strict) |
 | التنسيق | Tailwind CSS v4 |
 | الأيقونات | `lucide-react` |
 | قاعدة البيانات | Supabase Postgres + RLS |
@@ -280,8 +280,7 @@ create table delegation_requests (
   completed_at timestamptz,
   view_count int not null default 0,
   created_at timestamptz not null default now(),
-  expires_at timestamptz not null,            -- = session_date + 1 يوم (يُضبط عبر trigger)
-  constraint session_date_future check (session_date >= current_date)
+  expires_at timestamptz not null             -- = session_date + 1 يوم (يُضبط عبر trigger)
 );
 create index on delegation_requests (status, session_date) where status = 'open';
 create index on delegation_requests (governorate_id, status);
@@ -290,6 +289,13 @@ create index on delegation_requests (court_id, status);
 
 **قاعدة الانتهاء التلقائي (إلزامية):** مهمة `pg_cron` تعمل كل ساعة وتحوّل كل طلب
 `status = 'open' AND expires_at < now()` إلى `'expired'`. بدونها تتحول اللوحة إلى مقبرة طلبات ميتة.
+
+**منع تاريخ جلسة في الماضي — `trigger`، وليس `CHECK`:** يجب رفض `session_date` الأقدم من
+اليوم **عند الإنشاء فقط**، عبر `BEFORE INSERT trigger`. **ممنوع** استخدام
+`CHECK (session_date >= current_date)` كقيد على الجدول: القيد يُعاد تقييمه عند أي `UPDATE`
+لاحق على الصف — بما فيها تحويل الحالة إلى `expired` بواسطة `pg_cron`، أو `completed` بعد مرور
+تاريخ الجلسة — وسيفشل حتمًا بمجرد أن يصبح `session_date` أقدم من `current_date`، أي يمنع إغلاق
+أي طلب فات موعده. هذا عكس السلوك المطلوب تمامًا.
 
 ### الاستجابات والتقييمات
 ```sql
@@ -977,7 +983,7 @@ enaba/
 │   ├── board/                  (بطاقة طلب، نموذج نشر)
 │   └── ads/                    (مساحة إعلانية + مراقب الظهور)
 ├── lib/
-│   ├── supabase/{client,server,middleware}.ts
+│   ├── supabase/{client,server,proxy}.ts
 │   ├── phone.ts                (تطبيع E.164 + بناء رابط واتساب)
 │   ├── rate-limit.ts
 │   └── constants.ts
@@ -985,7 +991,7 @@ enaba/
 │   ├── migrations/
 │   ├── seed.sql
 │   └── functions/notify-new-request/
-├── middleware.ts               (حماية /admin)
+├── proxy.ts                    (حماية /admin — اتفاقية Next.js 16 بديلة عن middleware.ts)
 └── types/database.ts           (مولَّد من Supabase)
 ```
 
