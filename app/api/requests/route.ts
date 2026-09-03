@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { notifyMatchingLawyers } from "@/lib/notify";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import type { DelegationType } from "@/types/database";
 
 /**
@@ -22,6 +23,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
   }
 
+  const admin = createAdminClient();
+  const windowStart = new Date(
+    Date.now() - RATE_LIMITS.postDelegationRequest.windowHours * 60 * 60 * 1000,
+  ).toISOString();
+  const { count } = await admin
+    .from("delegation_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("requester_id", user.id)
+    .gte("created_at", windowStart);
+
+  if ((count ?? 0) >= RATE_LIMITS.postDelegationRequest.max) {
+    return NextResponse.json(
+      { error: "تجاوزت الحد المسموح لنشر طلبات الإنابة اليوم (5 طلبات). حاول غدًا." },
+      { status: 429 },
+    );
+  }
+
   const { data: inserted, error } = await supabase
     .from("delegation_requests")
     .insert({
@@ -40,7 +58,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "تعذّر نشر الطلب: " + (error?.message ?? "") }, { status: 400 });
   }
 
-  const admin = createAdminClient();
   const { data: court } = await admin.from("courts").select("name_ar").eq("id", courtId).single();
 
   await notifyMatchingLawyers({

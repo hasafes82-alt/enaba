@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * قبول طلب إنابة من لوحة الطلبات — SPEC.md §8/F3:
@@ -43,6 +44,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
   if (!delegationRequest || delegationRequest.status !== "open") {
     return NextResponse.json({ error: "الطلب لم يعد متاحًا" }, { status: 409 });
+  }
+
+  const windowStart = new Date(
+    Date.now() - RATE_LIMITS.respondToRequest.windowHours * 60 * 60 * 1000,
+  ).toISOString();
+  const { count } = await admin
+    .from("request_responses")
+    .select("id", { count: "exact", head: true })
+    .eq("lawyer_id", user.id)
+    .gte("created_at", windowStart);
+
+  if ((count ?? 0) >= RATE_LIMITS.respondToRequest.max) {
+    return NextResponse.json(
+      { error: "تجاوزت الحد المسموح للاستجابة للطلبات اليوم (30 استجابة). حاول غدًا." },
+      { status: 429 },
+    );
   }
 
   const { error: insertError } = await supabase.from("request_responses").insert({

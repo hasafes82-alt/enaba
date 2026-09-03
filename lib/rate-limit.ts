@@ -22,4 +22,7 @@ export function getClientIp(headers: Headers): string {
 export const RATE_LIMITS = {
   contactRevealVerified: { max: 20, windowHours: 1 },
   contactRevealAnonymous: { max: 5, windowHours: 1 },
+  postDelegationRequest: { max: 5, windowHours: 24 },
+  respondToRequest: { max: 30, windowHours: 24 },
+  registerFromSameFingerprint: { max: 3, windowHours: 24 },
 } as const;

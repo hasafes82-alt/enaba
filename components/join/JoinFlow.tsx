@@ -122,26 +122,24 @@ export function JoinFlow({ governorates, courts }: JoinFlowProps) {
       return;
     }
 
-    const { error: insertError } = await supabase.from("lawyer_profiles").insert({
-      id: user.id,
-      full_name: fullName.trim(),
-      phone: e164Phone,
-      bar_number: barNumber.trim() || null,
-      registration_degree: degree,
-      governorate_id: governorateId,
-      bio: bio.trim() || null,
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: fullName.trim(),
+        barNumber: barNumber.trim() || null,
+        degree,
+        governorateId,
+        bio: bio.trim() || null,
+        courtIds: selectedCourtIds,
+      }),
     });
+    const registerData = await res.json();
 
-    if (insertError) {
+    if (!res.ok) {
       setLoading(false);
-      setError("تعذّر إنشاء الملف الشخصي: " + insertError.message);
+      setError(registerData.error ?? "تعذّر إنشاء الملف الشخصي");
       return;
-    }
-
-    if (selectedCourtIds.length > 0) {
-      await supabase
-        .from("lawyer_courts")
-        .insert(selectedCourtIds.map((court_id) => ({ lawyer_id: user.id, court_id })));
     }
 
     const ext = carnetFile.name.split(".").pop() ?? "jpg";

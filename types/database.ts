@@ -410,6 +410,12 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["admin_actions"]["Insert"]>;
         Relationships: [];
       };
+      rate_limit_events: {
+        Row: { id: number; action: string; viewer_hash: string; created_at: string };
+        Insert: { id?: number; action: string; viewer_hash: string };
+        Update: Partial<Database["public"]["Tables"]["rate_limit_events"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       public_lawyers: {

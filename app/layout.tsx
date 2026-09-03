@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Aref_Ruqaa, Cairo, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { LegalBanner } from "@/components/layout/LegalBanner";
+import { Footer } from "@/components/layout/Footer";
 import { StickyFooterAd } from "@/components/ads/StickyFooterAd";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getAdForSlot } from "@/lib/data/ads";
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         <LegalBanner />
         <div className="flex flex-1 flex-col">{children}</div>
+        <Footer />
         {footerAd && <StickyFooterAd ad={footerAd} />}
       </body>
     </html>
