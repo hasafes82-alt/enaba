@@ -31,6 +31,7 @@ export interface Database {
         Row: { id: number; name_ar: string; slug: string; sort_order: number };
         Insert: { id?: number; name_ar: string; slug: string; sort_order?: number };
         Update: Partial<Database["public"]["Tables"]["governorates"]["Insert"]>;
+        Relationships: [];
       };
       courts: {
         Row: {
@@ -52,6 +53,7 @@ export interface Database {
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["courts"]["Insert"]>;
+        Relationships: [];
       };
       lawyer_profiles: {
         Row: {
@@ -93,11 +95,13 @@ export interface Database {
           accepts_notifications?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["lawyer_profiles"]["Insert"]>;
+        Relationships: [];
       };
       lawyer_courts: {
         Row: { lawyer_id: string; court_id: number };
         Insert: { lawyer_id: string; court_id: number };
         Update: Partial<Database["public"]["Tables"]["lawyer_courts"]["Insert"]>;
+        Relationships: [];
       };
       delegation_requests: {
         Row: {
@@ -134,6 +138,7 @@ export interface Database {
           completed_at?: string | null;
           status?: RequestStatus;
         };
+        Relationships: [];
       };
       request_responses: {
         Row: {
@@ -145,6 +150,7 @@ export interface Database {
         };
         Insert: { id?: string; request_id: string; lawyer_id: string; message?: string | null };
         Update: Partial<Database["public"]["Tables"]["request_responses"]["Insert"]>;
+        Relationships: [];
       };
       reviews: {
         Row: {
@@ -165,6 +171,7 @@ export interface Database {
           comment?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
+        Relationships: [];
       };
       sponsors: {
         Row: {
@@ -183,6 +190,7 @@ export interface Database {
           notes?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["sponsors"]["Insert"]>;
+        Relationships: [];
       };
       ads: {
         Row: {
@@ -217,6 +225,7 @@ export interface Database {
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["ads"]["Insert"]>;
+        Relationships: [];
       };
       ad_events: {
         Row: {
@@ -235,6 +244,7 @@ export interface Database {
           governorate_id?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["ad_events"]["Insert"]>;
+        Relationships: [];
       };
       perks: {
         Row: {
@@ -266,11 +276,13 @@ export interface Database {
           ends_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["perks"]["Insert"]>;
+        Relationships: [];
       };
       perk_redemptions: {
         Row: { id: number; perk_id: string; lawyer_id: string | null; created_at: string };
         Insert: { id?: number; perk_id: string; lawyer_id?: string | null };
         Update: Partial<Database["public"]["Tables"]["perk_redemptions"]["Insert"]>;
+        Relationships: [];
       };
       notification_subscriptions: {
         Row: {
@@ -292,6 +304,7 @@ export interface Database {
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["notification_subscriptions"]["Insert"]>;
+        Relationships: [];
       };
       notifications_outbox: {
         Row: {
@@ -315,6 +328,7 @@ export interface Database {
           status?: string;
         };
         Update: Partial<Database["public"]["Tables"]["notifications_outbox"]["Insert"]>;
+        Relationships: [];
       };
       contact_reveals: {
         Row: {
@@ -331,6 +345,7 @@ export interface Database {
           target_lawyer_id?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["contact_reveals"]["Insert"]>;
+        Relationships: [];
       };
       reports: {
         Row: {
@@ -351,6 +366,7 @@ export interface Database {
           status?: string;
         };
         Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]>;
+        Relationships: [];
       };
       admin_actions: {
         Row: {
@@ -371,6 +387,7 @@ export interface Database {
           meta?: Record<string, unknown> | null;
         };
         Update: Partial<Database["public"]["Tables"]["admin_actions"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: {
@@ -388,6 +405,7 @@ export interface Database {
           verification_status: VerificationStatus;
           last_seen_at: string | null;
         };
+        Relationships: [];
       };
     };
     Functions: Record<string, never>;

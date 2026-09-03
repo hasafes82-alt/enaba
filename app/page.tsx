@@ -1,17 +1,48 @@
-export default function Home() {
+import { getLawyers } from "@/lib/data/lawyers";
+import { getCourts, getGovernorates } from "@/lib/data/reference";
+import { Filters } from "@/components/lawyer/Filters";
+import { LawyerGrid } from "@/components/lawyer/LawyerGrid";
+import type { RegistrationDegree } from "@/types/database";
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const params = await searchParams;
+  const governorateSlug = firstValue(params.governorate);
+  const courtSlug = firstValue(params.court);
+  const degree = firstValue(params.degree) as RegistrationDegree | undefined;
+
+  const [governorates, courts] = await Promise.all([getGovernorates(), getCourts()]);
+
+  const selectedGovernorate = governorateSlug
+    ? governorates.find((g) => g.slug === governorateSlug)
+    : undefined;
+  const selectedCourt = courtSlug
+    ? courts.find((c) => c.slug === courtSlug && c.governorate_id === selectedGovernorate?.id)
+    : undefined;
+
+  const lawyers = await getLawyers({
+    governorateId: selectedGovernorate?.id,
+    courtId: selectedCourt?.id,
+    degree,
+  });
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-      <span className="rounded-full bg-gold-100 px-4 py-1 text-sm font-semibold text-gold-700">
-        قيد الإنشاء — المرحلة صفر
-      </span>
-      <h1 className="text-3xl font-bold text-navy-900 sm:text-4xl">
-        إنابة — دليل الإنابات القضائية للمحامين بمصر
-      </h1>
-      <p className="max-w-xl text-navy-700">
-        الأساس التقني للمنصة جاهز: Next.js وTailwind وSupabase ونظام التصميم.
-        الدليل ولوحة الطلبات المستعجلة قادمان في المرحلة الأولى وفق{" "}
-        <code className="rounded bg-surface px-1.5 py-0.5 text-sm">SPEC.md</code>.
-      </p>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+      <div className="flex flex-col gap-2 text-center sm:text-right">
+        <h1 className="text-2xl font-bold text-navy-900 sm:text-3xl">
+          دليل المحامين للإنابات القضائية
+        </h1>
+        <p className="text-navy-700">
+          ابحث عن زميل موثَّق في أي محافظة أو محكمة، وتواصل معه مباشرة خلال دقائق.
+        </p>
+      </div>
+
+      <Filters governorates={governorates} courts={courts} />
+
+      <LawyerGrid lawyers={lawyers} governorates={governorates} />
     </main>
   );
 }

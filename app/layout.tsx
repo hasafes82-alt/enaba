@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Cairo, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Aref_Ruqaa, Cairo, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Header } from "@/components/layout/Header";
+import { LegalBanner } from "@/components/layout/LegalBanner";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -13,6 +15,14 @@ const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   variable: "--font-ibm-plex-sans-arabic",
   subsets: ["arabic"],
   weight: ["400", "600"],
+  display: "swap",
+});
+
+/** خط الشعار فقط ("إنابة" في الهيدر) — طابع خط الرقعة الفخم من الهوية البصرية. */
+const arefRuqaa = Aref_Ruqaa({
+  variable: "--font-aref-ruqaa",
+  subsets: ["arabic"],
+  weight: ["700"],
   display: "swap",
 });
 
@@ -30,10 +40,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ar"
       dir="rtl"
-      className={`${cairo.variable} ${ibmPlexSansArabic.variable} h-full antialiased`}
+      className={`${cairo.variable} ${ibmPlexSansArabic.variable} ${arefRuqaa.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-navy-900 font-sans">
-        {children}
+        <Header />
+        <LegalBanner />
+        <div className="flex flex-1 flex-col">{children}</div>
       </body>
     </html>
   );

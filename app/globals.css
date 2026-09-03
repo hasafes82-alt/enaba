@@ -7,6 +7,8 @@
 @theme {
   /* الخطوط */
   --font-sans: var(--font-cairo), var(--font-ibm-plex-sans-arabic), system-ui, sans-serif;
+  /* خط الشعار فقط — طابع خط الرقعة من الهوية البصرية، لا يُستخدم في أي نص آخر */
+  --font-logo: var(--font-aref-ruqaa), var(--font-cairo), serif;
 
   /* الأساسي — كحلي قانوني */
   --color-navy-900: #0f172a;
