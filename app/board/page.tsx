@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { getOpenBoardRequests } from "@/lib/data/requests";
 import { getCourts, getGovernorates } from "@/lib/data/reference";
 import { createClient } from "@/lib/supabase/server";
@@ -33,13 +33,24 @@ export default async function BoardPage() {
           <h1 className="text-2xl font-bold text-navy-900 sm:text-3xl">لوحة طلبات الإنابة المستعجلة</h1>
           <p className="mt-1 text-navy-700">طلبات مفتوحة الآن — الجديد يظهر هنا فورًا.</p>
         </div>
-        <Link
-          href="/board/new"
-          className="flex items-center gap-2 rounded-lg bg-gold-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gold-700"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          طرح طلب إنابة جديد
-        </Link>
+        <div className="flex gap-2">
+          {user && (
+            <Link
+              href="/board/mine"
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy-900 hover:bg-bg"
+            >
+              <ClipboardList className="h-4 w-4" aria-hidden="true" />
+              طلباتي
+            </Link>
+          )}
+          <Link
+            href="/board/new"
+            className="flex items-center gap-2 rounded-lg bg-gold-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gold-700"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            طرح طلب إنابة جديد
+          </Link>
+        </div>
       </div>
 
       <NotificationOptIn isAuthenticated={Boolean(user)} />
