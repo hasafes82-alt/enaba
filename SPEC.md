@@ -756,6 +756,15 @@ create index on notifications_outbox (status, created_at) where status = 'queued
 - إلغاء الاشتراك بضغطة واحدة من داخل الإشعار.
 - **ساعات صمت** من 11 مساءً حتى 7 صباحًا (تُؤجَّل الرسائل، ولا تُلغى).
 
+### ملاحظة تنفيذ: جدولة `dispatch-notifications`
+
+`vercel.json` يُعرِّف Cron واحد يستدعي `/api/internal/dispatch-notifications` — لكن **خطة
+Vercel Hobby تسمح بمرة واحدة يوميًا كحد أقصى لكل Cron**، وليس كل 15 دقيقة كما قد يُفهَم من "معالجة
+دورية". الجدولة الحالية `0 5 * * *` (5:00 UTC ≈ 7 صباحًا بتوقيت القاهرة) تعمل فور انتهاء ساعات
+الصمت مباشرة، فتُفرِّغ كل ما تجمَّع بين عشية وضحاها. الإشعارات التي تُرسَل فورًا (خارج ساعات
+الصمت، الحالة الغالبة) لا تنتظر هذا الـ Cron إطلاقًا — يحدث إرسالها مباشرة من `lib/notify.ts` عند
+إنشاء الطلب. الترقية لخطة Pro تتيح جدولة أكثر تكرارًا لو لزم الأمر مستقبلًا.
+
 ---
 
 ## 10. نظام الإعلانات والقياس
@@ -1063,7 +1072,7 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=     # Web Push — يحتاجه المتصفح ع�
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=                    # mailto: للتواصل حسب معيار Web Push
 DAILY_HASH_SALT=                  # لتجزئة بصمة الزائر
-INTERNAL_CRON_SECRET=             # يحمي /api/internal/dispatch-notifications من الاستدعاء العام
+CRON_SECRET=                      # اسم إلزامي حرفيًا — Vercel يُرسله تلقائيًا كـ Authorization لاستدعاءات vercel.json crons
 ```
 
 > **قاعدة أمنية:** أي متغير بلا بادئة `NEXT_PUBLIC_` **ممنوع** استيراده داخل ملف يحتوي
