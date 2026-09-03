@@ -416,6 +416,38 @@ create table perk_redemptions (
 );
 ```
 
+### مكتبة النماذج القانونية الرقمية
+أول مصدر دخل تُطلقه المنصة فعليًا — راجع [§14 بند 1](#14-نموذج-الأعمال-ومصادر-الدخل) و[F7](#f7--مكتبة-النماذج-القانونية-الرقمية).
+تسليم يدوي عبر واتساب في هذه المرحلة (بلا بوابة دفع مدمجة بعد — راجع الملاحظة في F7).
+```sql
+create table legal_forms (
+  id uuid primary key default gen_random_uuid(),
+  category text not null,          -- صحف دعاوى / مذكرات دفاع / إنذارات / عقود
+  title text not null,
+  description text,
+  price_egp numeric(6, 2) not null check (price_egp >= 0),
+  file_path text not null,         -- مسار في bucket خاص 'legal-forms' — لا يُعرض إلا للمشرف
+  file_type text not null default 'docx' check (file_type in ('docx', 'pdf')),
+  is_published boolean not null default false,
+  download_count int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index on legal_forms (category) where is_published;
+
+-- طلب شراء: لا يعتمد على تسجيل دخول — رقم واتساب فقط يكفي للتواصل والتسليم.
+-- «paid»/«delivered» يُحدَّثان يدويًا من المشرف بعد تأكيد الدفع (فودافون كاش/إنستاباي خارج المنصة).
+create table legal_form_orders (
+  id bigserial primary key,
+  form_id uuid not null references legal_forms(id) on delete cascade,
+  buyer_name text,
+  buyer_whatsapp text not null check (buyer_whatsapp ~ '^\+20\d{10}$'),
+  status text not null default 'pending' check (status in ('pending', 'paid', 'delivered', 'cancelled')),
+  admin_note text,
+  created_at timestamptz not null default now()
+);
+create index on legal_form_orders (status, created_at);
+```
+
 ### الأمان والتشغيل
 ```sql
 create table contact_reveals (
@@ -529,12 +561,30 @@ create policy "admin manages requests" on delegation_requests
   for all using (is_admin()) with check (is_admin());
 ```
 
+### مكتبة النماذج القانونية
+```sql
+create policy "public reads published legal forms" on legal_forms
+  for select using (is_published);
+
+create policy "admin manages legal forms" on legal_forms
+  for all using (is_admin()) with check (is_admin());
+
+-- طلب الشراء مفتوح (بلا تسجيل دخول)، مقيّد بتحديد معدل في طبقة التطبيق (route handler)
+-- وليس RLS — نفس مبدأ perk_redemptions/reports.
+create policy "anyone creates legal form order" on legal_form_orders
+  for insert with check (true);
+
+create policy "admin manages legal form orders" on legal_form_orders
+  for all using (is_admin()) with check (is_admin());
+```
+
 ### التخزين (Storage)
 | Bucket | الوصول | المحتوى |
 |---|---|---|
 | `carnets` | **خاص تمامًا** | صور كارنيهات النقابة — تُقرأ فقط عبر رابط موقّع مؤقت للمشرف |
 | `avatars` | عام | صور شخصية · حد أقصى 2MB · jpeg/png/webp |
 | `sponsors` | عام | شعارات وبانرات الرعاة |
+| `legal-forms` | **خاص تمامًا** | ملفات Word/PDF لمكتبة النماذج — رفع وقراءة للمشرف فقط، حد أقصى 10MB |
 
 > **مخالفة جسيمة:** جعل bucket الكارنيهات عامًا. صورة الكارنيه تحتوي على الاسم الكامل ورقم القيد
 > وصورة شخصية — تسريبها انتهاك مباشر لقانون حماية البيانات الشخصية.
@@ -546,6 +596,7 @@ create policy "admin manages requests" on delegation_requests
 | نشر طلب إنابة | 5 / يوم لكل محامٍ |
 | التسجيل من نفس IP | 3 / يوم |
 | الاستجابة لطلب | 30 / يوم |
+| طلب شراء نموذج | 5 / يوم لكل بصمة زائر |
 
 ### تحصين إضافي إلزامي — Supabase Advisors
 
@@ -702,6 +753,38 @@ pending → [مراجعة المشرف] → verified  (يظهر في الدلي�
 | **العروض** | إدارة شركاء الخصومات وأكواد الخصم |
 | **البلاغات** | مراجعة والتصرف |
 | **الإحصاءات** | محامون موثقون · طلبات مفتوحة/مكتملة · معدل الاستجابة · أداء الإعلانات |
+
+---
+
+### F7 — مكتبة النماذج القانونية الرقمية
+**المسار:** `/forms` · إدارة: `/admin/forms`
+
+**المبدأ (SPEC.md §14 بند 1):** أسرع مصدر دخل — صحف دعاوى، مذكرات دفاع، إنذارات،
+عقود جاهزة Word/PDF. **بلا بوابة دفع مدمجة في هذا الإصدار** (قرار مؤجَّل عمدًا —
+لا مُزوِّد دفع مصري محدَّد بعد). التسليم **يدوي بالكامل**:
+
+```
+الزائر يفتح /forms → يختار نموذجًا → يُدخل رقم واتساب فقط (بلا تسجيل دخول)
+  → يُنشأ طلب "pending" في legal_form_orders + يُفتح واتساب على رقم المنصة
+  → المشرف يستقبل رسالة الزائر، يؤكد الدفع (فودافون كاش/إنستاباي) يدويًا خارج المنصة
+  → المشرف يُحمِّل الملف من /admin/forms (رابط موقّع 5 دقائق، مثل الكارنيه)
+    ويرسله يدويًا عبر واتساب، ثم يعلّم الطلب "delivered"
+```
+
+**بطاقة النموذج في `/forms`:** الفئة · العنوان · الوصف · السعر (ج.م) · زر «اطلب النموذج».
+
+**لوحة الإدارة `/admin/forms`:**
+| القسم | الوظائف |
+|---|---|
+| **الكتالوج** | إضافة نموذج (رفع الملف + الفئة + السعر) · نشر/إخفاء · حذف · تحميل الملف برابط موقّع |
+| **الطلبات** | عرض الطلبات (الأحدث أولًا) · رقم واتساب المشتري · تعليم «مدفوع» / «تم التسليم» / «ملغى» |
+
+> **قرار مؤجَّل بوضوح، وليس نسيانًا:** أتمتة الدفع (Paymob/Fawry أو غيرهما) تتطلب
+> حساب تاجر وقرار عمل خارج نطاق هذا التغيير. التسليم اليدوي أعلاه يكفي لتحقيق
+> إيراد فعلي فورًا دون انتظار ذلك القرار — طبقًا لملاحظة §14 ("ابدأ به بالتوازي
+> مع بناء المنصة، لا بعدها"). عند اختيار بوابة الدفع لاحقًا: تُستبدل خطوة
+> "تأكيد الدفع يدويًا" بويب هوك من البوابة يحدّث `legal_form_orders.status`
+> تلقائيًا، دون تغيير في مخطط الجدول.
 
 ---
 
@@ -985,8 +1068,9 @@ Vercel Hobby تسمح بمرة واحدة يوميًا كحد أقصى لكل Cr
 **خارج النطاق:** التقييمات · العروض · نظام الإعلانات الكامل · واتساب API.
 
 ### المرحلة 2 — الثقة والدخل (أسابيع 5–8)
-التقييمات بعد الإتمام · صفحة العروض والمزايا · نظام الإعلانات الكامل مع القياس ·
-تقارير الرعاة · **إطلاق مكتبة النماذج الرقمية**.
+✅ التقييمات بعد الإتمام · ✅ صفحة العروض والمزايا · ✅ نظام الإعلانات الكامل مع القياس ·
+✅ تقارير الرعاة · ✅ **مكتبة النماذج الرقمية** (F7) — كتالوج + طلب شراء وتسليم يدوي عبر
+واتساب؛ أتمتة الدفع (بوابة دفع مصرية) قرار مؤجَّل عمدًا، راجع الملاحظة في F7.
 
 ### المرحلة 3 — التوسّع (أسابيع 9–16)
 إشعارات واتساب Business API · اشتراك أولوية الظهور · تحويل المنصة إلى PWA قابلة للتثبيت ·
@@ -1036,12 +1120,15 @@ enaba/
 │   ├── lawyers/[gov]/[court]/page.tsx
 │   ├── board/page.tsx          (لوحة الطلبات)
 │   ├── perks/page.tsx
+│   ├── forms/page.tsx          (مكتبة النماذج القانونية — F7)
 │   ├── join/page.tsx
 │   ├── profile/page.tsx
 │   ├── legal/{terms,privacy}/page.tsx
-│   ├── admin/                  (محمي بـ middleware)
+│   ├── admin/                  (محمي بـ proxy.ts + RLS)
+│   │   └── forms/page.tsx      (كتالوج النماذج وطلبات الشراء)
 │   └── api/
 │       ├── contact/route.ts    (كشف رقم + تحديد معدل)
+│       ├── legal-forms/[id]/order/route.ts
 │       ├── ads/[id]/click/route.ts
 │       └── ads/events/route.ts
 ├── components/
@@ -1073,6 +1160,7 @@ VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=                    # mailto: للتواصل حسب معيار Web Push
 DAILY_HASH_SALT=                  # لتجزئة بصمة الزائر
 CRON_SECRET=                      # اسم إلزامي حرفيًا — Vercel يُرسله تلقائيًا كـ Authorization لاستدعاءات vercel.json crons
+NEXT_PUBLIC_FORMS_WHATSAPP_NUMBER= # رقم واتساب المنصة لاستقبال طلبات مكتبة النماذج (F7) — E.164
 ```
 
 > **قاعدة أمنية:** أي متغير بلا بادئة `NEXT_PUBLIC_` **ممنوع** استيراده داخل ملف يحتوي

@@ -185,3 +185,60 @@ export async function getAllAdsForAdmin(): Promise<AdminAd[]> {
     }))
     .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
 }
+
+export interface AdminLegalForm {
+  id: string;
+  category: string;
+  title: string;
+  price_egp: number;
+  file_type: "docx" | "pdf";
+  is_published: boolean;
+  download_count: number;
+}
+
+/** كل النماذج (منشورة وغير منشورة) — RLS "admin manages legal forms" (all). */
+export async function getAllLegalFormsForAdmin(): Promise<AdminLegalForm[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("legal_forms")
+    .select("id, category, title, price_egp, file_type, is_published, download_count")
+    .order("category");
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export interface AdminLegalFormOrder {
+  id: number;
+  form_title: string;
+  buyer_name: string | null;
+  buyer_whatsapp: string;
+  status: "pending" | "paid" | "delivered" | "cancelled";
+  created_at: string;
+}
+
+/** كل طلبات شراء النماذج، الأحدث أولًا — SPEC.md §8/F7. */
+export async function getLegalFormOrdersForAdmin(): Promise<AdminLegalFormOrder[]> {
+  const supabase = await createClient();
+  const { data: orders, error } = await supabase
+    .from("legal_form_orders")
+    .select("id, form_id, buyer_name, buyer_whatsapp, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) throw error;
+  if (!orders || orders.length === 0) return [];
+
+  const formIds = [...new Set(orders.map((o) => o.form_id))];
+  const { data: forms } = await supabase.from("legal_forms").select("id, title").in("id", formIds);
+  const titleByForm = new Map((forms ?? []).map((f) => [f.id, f.title]));
+
+  return orders.map((o) => ({
+    id: o.id,
+    form_title: titleByForm.get(o.form_id) ?? "—",
+    buyer_name: o.buyer_name,
+    buyer_whatsapp: o.buyer_whatsapp,
+    status: o.status,
+    created_at: o.created_at,
+  }));
+}

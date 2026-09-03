@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ClipboardList, Flag, Gift, Megaphone, ShieldCheck } from "lucide-react";
+import { ClipboardList, FileText, Flag, Gift, Megaphone, ShieldCheck } from "lucide-react";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 const ADMIN_NAV = [
   { href: "/admin/verifications", label: "طلبات التوثيق", icon: ShieldCheck },
   { href: "/admin/requests", label: "طلبات الإنابة", icon: ClipboardList },
   { href: "/admin/perks", label: "العروض", icon: Gift },
+  { href: "/admin/forms", label: "مكتبة النماذج", icon: FileText },
   { href: "/admin/ads", label: "الإعلانات", icon: Megaphone },
   { href: "/admin/reports", label: "البلاغات", icon: Flag },
 ];

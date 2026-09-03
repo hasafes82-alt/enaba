@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/", label: "دليل المحامين" },
   { href: "/board", label: "لوحة طلبات الإنابة" },
   { href: "/perks", label: "عروض الزملاء" },
+  { href: "/forms", label: "مكتبة النماذج" },
 ];
 
 export function Header() {
