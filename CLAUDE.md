@@ -36,6 +36,8 @@
 5. **`/admin` محمي بطبقتين مستقلتين:** `proxy.ts` (اتفاقية Next.js 16 بديلة عن middleware.ts) + سياسات RLS. إخفاء الرابط ليس أمانًا.
 6. سياسة `with check` على `lawyer_profiles` يجب أن تمنع المستخدم من تعديل `role` أو
    `verification_status` الخاصين به (رفع صلاحيات / توثيق ذاتي).
+7. أي `view` جديد: `ALTER VIEW <name> SET (security_invoker = true);` فور الإنشاء.
+   أي دالة جديدة: `SET search_path = public` صراحةً. راجع [§6](./SPEC.md#تحصين-إضافي-إلزامي--supabase-advisors).
 
 ## قواعد الواجهة
 
@@ -52,6 +54,7 @@
 - [ ] `tsc --noEmit` نظيف
 - [ ] `next lint` نظيف
 - [ ] RLS مفعّل ومختبر على أي جدول جديد
+- [ ] `get_advisors` (Supabase) نظيف من أي نتيجة `ERROR` على أي view/function جديدة
 - [ ] لا مفاتيح سرية في كود العميل
 - [ ] الحالات الثلاث موجودة في أي قائمة جديدة
 - [ ] Lighthouse للجوال ≥ 90 (أداء · إمكانية وصول · SEO)
