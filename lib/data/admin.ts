@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import type { DelegationType, RegistrationDegree, RequestStatus, VerificationStatus } from "@/types/database";
+import type {
+  AdSlot,
+  DelegationType,
+  RegistrationDegree,
+  RequestStatus,
+  VerificationStatus,
+} from "@/types/database";
 
 export interface PendingLawyer {
   id: string;
@@ -96,4 +102,86 @@ export async function getOpenReports(): Promise<AdminReport[]> {
 
   if (error) throw error;
   return data ?? [];
+}
+
+export interface AdminPerk {
+  id: string;
+  category: string;
+  partner_name: string;
+  title: string;
+  description: string | null;
+  discount_code: string | null;
+  whatsapp: string | null;
+  phone: string | null;
+  is_active: boolean;
+}
+
+/** كل العروض (نشطة وغير نشطة) — RLS "read active or admin" تسمح للمشرف بالكل. */
+export async function getAllPerksForAdmin(): Promise<AdminPerk[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("perks")
+    .select("id, category, partner_name, title, description, discount_code, whatsapp, phone, is_active")
+    .order("category");
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export interface AdminAd {
+  id: string;
+  sponsor_name: string;
+  slot: AdSlot;
+  title: string;
+  governorate_id: number | null;
+  starts_at: string;
+  ends_at: string;
+  is_active: boolean;
+  impressions: number;
+  clicks: number;
+}
+
+const SLOT_ORDER: AdSlot[] = ["top_leaderboard", "in_feed", "board_inline", "sticky_footer"];
+
+/** كل الإعلانات مع إحصاءات الأداء — SPEC.md §10 ("تقرير شهري لكل راعٍ"، مبسَّط هنا كإجمالي حي). */
+export async function getAllAdsForAdmin(): Promise<AdminAd[]> {
+  const supabase = await createClient();
+  const { data: ads, error } = await supabase
+    .from("ads")
+    .select("id, sponsor_id, slot, title, governorate_id, starts_at, ends_at, is_active")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!ads || ads.length === 0) return [];
+
+  const sponsorIds = [...new Set(ads.map((a) => a.sponsor_id))];
+  const adIds = ads.map((a) => a.id);
+
+  const [{ data: sponsors }, { data: events }] = await Promise.all([
+    supabase.from("sponsors").select("id, name").in("id", sponsorIds),
+    supabase.from("ad_events").select("ad_id, event_type").in("ad_id", adIds),
+  ]);
+
+  const sponsorNameById = new Map((sponsors ?? []).map((s) => [s.id, s.name]));
+  const impressionsByAd = new Map<string, number>();
+  const clicksByAd = new Map<string, number>();
+  for (const e of events ?? []) {
+    const map = e.event_type === "impression" ? impressionsByAd : clicksByAd;
+    map.set(e.ad_id, (map.get(e.ad_id) ?? 0) + 1);
+  }
+
+  return ads
+    .map((a) => ({
+      id: a.id,
+      sponsor_name: sponsorNameById.get(a.sponsor_id) ?? "—",
+      slot: a.slot,
+      title: a.title,
+      governorate_id: a.governorate_id,
+      starts_at: a.starts_at,
+      ends_at: a.ends_at,
+      is_active: a.is_active,
+      impressions: impressionsByAd.get(a.id) ?? 0,
+      clicks: clicksByAd.get(a.id) ?? 0,
+    }))
+    .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
 }

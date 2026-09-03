@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCourts, getGovernorateBySlug, getGovernorates } from "@/lib/data/reference";
 import { getLawyers } from "@/lib/data/lawyers";
+import { getAdForSlot } from "@/lib/data/ads";
 import { LawyerGrid } from "@/components/lawyer/LawyerGrid";
 
 export const revalidate = 3600;
@@ -50,9 +51,10 @@ export default async function GovernoratePage({
   ]);
   if (!governorate) notFound();
 
-  const [lawyers, courts] = await Promise.all([
+  const [lawyers, courts, inFeedAd] = await Promise.all([
     getLawyers({ governorateId: governorate.id }, supabase),
     getCourts(governorate.id, supabase),
+    getAdForSlot("in_feed", governorate.id, supabase),
   ]);
 
   return (
@@ -104,7 +106,12 @@ export default async function GovernoratePage({
         </div>
       )}
 
-      <LawyerGrid lawyers={lawyers} governorates={allGovernorates} />
+      <LawyerGrid
+        lawyers={lawyers}
+        governorates={allGovernorates}
+        inFeedAd={inFeedAd}
+        governorateId={governorate.id}
+      />
     </main>
   );
 }

@@ -1,7 +1,9 @@
 import { getLawyers } from "@/lib/data/lawyers";
 import { getCourts, getGovernorates } from "@/lib/data/reference";
+import { getAdForSlot } from "@/lib/data/ads";
 import { Filters } from "@/components/lawyer/Filters";
 import { LawyerGrid } from "@/components/lawyer/LawyerGrid";
+import { AdSlot } from "@/components/ads/AdSlot";
 import type { RegistrationDegree } from "@/types/database";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
@@ -23,11 +25,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     ? courts.find((c) => c.slug === courtSlug && c.governorate_id === selectedGovernorate?.id)
     : undefined;
 
-  const lawyers = await getLawyers({
-    governorateId: selectedGovernorate?.id,
-    courtId: selectedCourt?.id,
-    degree,
-  });
+  const [lawyers, leaderboardAd, inFeedAd] = await Promise.all([
+    getLawyers({
+      governorateId: selectedGovernorate?.id,
+      courtId: selectedCourt?.id,
+      degree,
+    }),
+    getAdForSlot("top_leaderboard", selectedGovernorate?.id),
+    getAdForSlot("in_feed", selectedGovernorate?.id),
+  ]);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
@@ -42,7 +48,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <Filters governorates={governorates} courts={courts} />
 
-      <LawyerGrid lawyers={lawyers} governorates={governorates} />
+      {leaderboardAd && <AdSlot ad={leaderboardAd} governorateId={selectedGovernorate?.id} />}
+
+      <LawyerGrid lawyers={lawyers} governorates={governorates} inFeedAd={inFeedAd} governorateId={selectedGovernorate?.id} />
     </main>
   );
 }

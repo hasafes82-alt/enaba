@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Aref_Ruqaa, Cairo, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { LegalBanner } from "@/components/layout/LegalBanner";
+import { StickyFooterAd } from "@/components/ads/StickyFooterAd";
+import { createPublicClient } from "@/lib/supabase/public";
+import { getAdForSlot } from "@/lib/data/ads";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -35,7 +38,12 @@ export const metadata: Metadata = {
     "دليل مهني مجاني لربط المحامين المصريين لتبادل الإنابات القضائية: حضور جلسات، تصوير أوراق، إيداع صحف دعاوى، وإنذارات على يد محضر — في كل محافظات مصر.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // عميل عام بلا cookies() عمدًا — الـ layout يغلّف كل الصفحات، واستخدام
+  // عميل الجلسة هنا كان سيجبر حتى صفحات SEO الثابتة (lawyers/[gov]/[court])
+  // على التصيير الديناميكي ويكسر ISR (راجع SPEC.md §4/الملحق).
+  const footerAd = await getAdForSlot("sticky_footer", undefined, createPublicClient()).catch(() => null);
+
   return (
     <html
       lang="ar"
@@ -46,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         <LegalBanner />
         <div className="flex flex-1 flex-col">{children}</div>
+        {footerAd && <StickyFooterAd ad={footerAd} />}
       </body>
     </html>
   );
